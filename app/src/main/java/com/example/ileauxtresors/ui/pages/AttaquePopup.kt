@@ -10,14 +10,17 @@ import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
 /** Page.ATTAQUE : popup au-dessus du plateau. Rester / Fuir → PLATEAU. */
 @Composable
 fun AttaquePopup(
+    attackerName: String,
+    damage: Int,
     onRester: () -> Unit,
     onFuir: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = {},
         title = { Text("Fuir l'île ?") },
-        // TODO : afficher qui attaque et combien de dégâts ont été reçus.
-        text = { Text("Vous avez été touché sur l'île.") },
+        text = {
+            Text("$attackerName vous a touché : −$damage coque. Si vous fuyez, $attackerName prend l'île.")
+        },
         confirmButton = { TextButton(onClick = onFuir) { Text("Fuir") } },
         dismissButton = { TextButton(onClick = onRester) { Text("Rester") } },
     )
@@ -26,5 +29,5 @@ fun AttaquePopup(
 @Preview
 @Composable
 private fun AttaquePopupPreview() {
-    IleAuxTresorsTheme { AttaquePopup(onRester = {}, onFuir = {}) }
+    IleAuxTresorsTheme { AttaquePopup(attackerName = "Barbe-Grise", damage = 2, onRester = {}, onFuir = {}) }
 }

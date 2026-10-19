@@ -1,5 +1,8 @@
 package com.example.ileauxtresors.model
 
+/** Le capitaine sur l'île vient d'être touché : il doit choisir de rester ou de fuir. */
+data class IslandHit(val attackerIndex: Int, val damage: Int)
+
 /** Tout l'état d'une partie. Immuable : chaque action renvoie un nouveau GameState. */
 data class GameState(
     val captains: List<Captain>,
@@ -7,6 +10,8 @@ data class GameState(
     val currentIndex: Int = 0,
     /** Index du capitaine sur l'île, ou null si elle est libre. */
     val islandHolder: Int? = null,
+    /** Non null tant que le capitaine sur l'île n'a pas répondu à une attaque. */
+    val islandHit: IslandHit? = null,
     val dice: List<DieFace> = emptyList(),
     /** Index des dés gardés (« GARDÉ ») qui ne seront pas relancés. */
     val keptDice: Set<Int> = emptySet(),

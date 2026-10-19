@@ -4,6 +4,7 @@ import com.example.ileauxtresors.model.DieFace
 import com.example.ileauxtresors.model.GameEngine
 import com.example.ileauxtresors.model.GameRules
 import com.example.ileauxtresors.model.GameState
+import com.example.ileauxtresors.model.IslandHit
 import com.example.ileauxtresors.model.Ship
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -53,6 +54,79 @@ class GameEngineTest {
             if (i == 0) c else c.copy(hull = 0)
         })
         assertEquals(lastAfloat.player, GameEngine.winner(lastAfloat))
+    }
+
+    private fun withDice(vararg faces: DieFace, current: Int = 0, holder: Int? = null) =
+        newGame.copy(dice = faces.toList(), currentIndex = current, islandHolder = holder)
+
+    @Test
+    fun coinGold_needsThreeOfAKindPlusOnePerExtra() {
+        assertEquals(0, GameEngine.coinGold(listOf(DieFace.OR, DieFace.OR, DieFace.ARGENT)))
+        assertEquals(1, GameEngine.coinGold(List(3) { DieFace.CUIVRE }))
+        assertEquals(4, GameEngine.coinGold(List(4) { DieFace.OR } + DieFace.CUIVRE + DieFace.CANON))
+        assertEquals(1 + 2, GameEngine.coinGold(List(3) { DieFace.CUIVRE } + List(3) { DieFace.ARGENT }))
+    }
+
+    @Test
+    fun resolveDice_onFreeIslandDocksAndAddsGourds() {
+        val s = GameEngine.resolveDice(withDice(DieFace.GOURDE, DieFace.GOURDE, DieFace.OR))
+        assertEquals(0, s.islandHolder)
+        assertEquals(GameRules.ISLAND_DOCK_BONUS, s.player.gold)
+        assertEquals(2, s.player.gourds)
+    }
+
+    @Test
+    fun resolveDice_carpenterRepairsAtSeaButNotOnIsland() {
+        val damaged = newGame.copy(captains = newGame.captains.map { it.damaged(3) })
+        val atSea = GameEngine.resolveDice(damaged.copy(dice = List(2) { DieFace.CHARPENTIER }, islandHolder = 1))
+        assertEquals(GameRules.MAX_HULL - 1, atSea.player.hull)
+
+        val onIsland = GameEngine.resolveDice(damaged.copy(dice = List(2) { DieFace.CHARPENTIER }, islandHolder = 0))
+        assertEquals(GameRules.MAX_HULL - 3, onIsland.player.hull)
+
+        val full = GameEngine.resolveDice(withDice(*Array(4) { DieFace.CHARPENTIER }, holder = 1))
+        assertEquals(GameRules.MAX_HULL, full.player.hull)
+    }
+
+    @Test
+    fun resolveDice_cannonsFromIslandHitEveryoneElse() {
+        val s = GameEngine.resolveDice(withDice(DieFace.CANON, DieFace.CANON, holder = 0))
+        assertEquals(GameRules.MAX_HULL, s.player.hull)
+        assertTrue(s.bots.all { it.hull == GameRules.MAX_HULL - 2 })
+        assertNull(s.islandHit)
+    }
+
+    @Test
+    fun resolveDice_cannonsAtSeaHitIslandHolderWhoMustAnswer() {
+        val s = GameEngine.resolveDice(withDice(DieFace.CANON, current = 2, holder = 0))
+        assertEquals(GameRules.MAX_HULL - 1, s.player.hull)
+        assertEquals(GameRules.MAX_HULL, s.captains[1].hull)
+        assertEquals(IslandHit(attackerIndex = 2, damage = 1), s.islandHit)
+        assertEquals(0, s.islandHolder)
+
+        val stayed = GameEngine.answerIslandAttack(s, flee = false)
+        assertNull(stayed.islandHit)
+        assertEquals(0, stayed.islandHolder)
+
+        val fled = GameEngine.answerIslandAttack(s, flee = true)
+        assertNull(fled.islandHit)
+        assertEquals(2, fled.islandHolder)
+        assertEquals(GameRules.ISLAND_DOCK_BONUS, fled.captains[2].gold)
+    }
+
+    @Test
+    fun resolveDice_sinkingTheIslandHolderLetsTheAttackerDock() {
+        val weak = newGame.copy(captains = newGame.captains.mapIndexed { i, c -> if (i == 1) c.copy(hull = 1) else c })
+        val s = GameEngine.resolveDice(weak.copy(dice = List(2) { DieFace.CANON }, islandHolder = 1))
+        assertTrue(s.captains[1].isSunk)
+        assertNull(s.islandHit)
+        assertEquals(0, s.islandHolder)
+    }
+
+    @Test
+    fun startTurn_givesBonusOnlyToTheIslandHolder() {
+        assertEquals(GameRules.ISLAND_START_BONUS, GameEngine.startTurn(newGame.copy(islandHolder = 0)).player.gold)
+        assertEquals(0, GameEngine.startTurn(newGame.copy(islandHolder = 1)).player.gold)
     }
 
     @Test

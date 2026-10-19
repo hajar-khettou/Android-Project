@@ -22,9 +22,6 @@ class GameViewModel : ViewModel() {
     var game by mutableStateOf<GameState?>(null)
         private set
 
-    /** Index du capitaine qui vient de toucher le joueur sur l'île (pour la popup ATTAQUE). */
-    private var pendingAttacker: Int? = null
-
     fun goToPage(target: Page) {
         page = target
     }
@@ -39,27 +36,20 @@ class GameViewModel : ViewModel() {
     fun toggleKeep(index: Int) = update { GameEngine.toggleKeep(it, index) }
 
     fun validateDice() {
-        update { GameEngine.resolveDice(it) }
+        update { answerBotIslandHit(GameEngine.resolveDice(it)) }
         if (!goToFinIfOver()) goToPage(Page.TAVERNE)
     }
 
     /** Fin du tour du joueur : les bots jouent, puis on revient au joueur. */
     fun endTurn() {
-        update { playBots(GameEngine.nextTurn(it)) }
-        // TODO : si un bot a touché le joueur sur l'île, remplir pendingAttacker
-        //  et aller sur Page.ATTAQUE au lieu de PLATEAU.
-        if (!goToFinIfOver()) goToPage(Page.PLATEAU)
+        val current = game ?: return
+        playBots(GameEngine.nextTurn(current))
     }
 
-    fun stayOnIsland() {
-        pendingAttacker = null
-        goToPage(Page.PLATEAU)
-    }
-
-    fun fleeIsland() {
-        pendingAttacker?.let { attacker -> update { GameEngine.fleeIsland(it, attacker) } }
-        pendingAttacker = null
-        goToPage(Page.PLATEAU)
+    /** Réponse du joueur à la popup ATTAQUE, puis les bots suivants finissent leur tour. */
+    fun answerAttack(flee: Boolean) {
+        val current = game ?: return
+        playBots(GameEngine.nextTurn(GameEngine.answerIslandAttack(current, flee)))
     }
 
     fun replay() {
@@ -72,12 +62,31 @@ class GameViewModel : ViewModel() {
         goToPage(Page.ACCUEIL)
     }
 
-    private fun playBots(start: GameState): GameState {
+    /**
+     * Fait jouer les bots jusqu'au tour du joueur. S'arrête sur ATTAQUE si un bot
+     * touche le joueur sur l'île, ou sur FIN si la partie est terminée.
+     */
+    private fun playBots(start: GameState) {
         var state = start
         while (state.current.isBot && !isOver(state)) {
-            state = GameEngine.nextTurn(BotPlayer.playTurn(state))
+            state = answerBotIslandHit(BotPlayer.playTurn(state))
+            if (isOver(state)) break
+            if (state.islandHit != null) {
+                game = state
+                goToPage(Page.ATTAQUE)
+                return
+            }
+            state = GameEngine.nextTurn(state)
         }
-        return state
+        game = state
+        if (!goToFinIfOver()) goToPage(Page.PLATEAU)
+    }
+
+    /** Si c'est un bot qui est touché sur l'île, il décide tout de suite. */
+    private fun answerBotIslandHit(state: GameState): GameState {
+        val holder = state.islandHolder
+        if (state.islandHit == null || holder == null || !state.captains[holder].isBot) return state
+        return GameEngine.answerIslandAttack(state, BotPlayer.shouldFlee(state, holder))
     }
 
     private fun isOver(state: GameState) = GameEngine.winner(state) != null || state.player.isSunk

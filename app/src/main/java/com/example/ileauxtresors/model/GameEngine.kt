@@ -24,23 +24,54 @@ object GameEngine {
         return state.copy(keptDice = kept)
     }
 
-    /** Début du tour : +2 or si le joueur courant commence sur l'île. */
+    /** Début du tour : remet les dés à zéro, +2 or si le joueur courant commence sur l'île. */
     fun startTurn(state: GameState): GameState {
-        // TODO : appliquer ISLAND_START_BONUS.
-        return state.copy(dice = emptyList(), keptDice = emptySet(), rollsLeft = GameRules.ROLLS_PER_TURN)
+        val reset = state.copy(dice = emptyList(), keptDice = emptySet(), rollsLeft = GameRules.ROLLS_PER_TURN)
+        return if (state.islandHolder == state.currentIndex) {
+            reset.updateCaptain(state.currentIndex) { it.copy(gold = it.gold + GameRules.ISLAND_START_BONUS) }
+        } else {
+            reset
+        }
     }
 
-    /** Applique les dés validés : or, canons, charpentiers, gourdes, puis amarrage à l'île. */
+    /**
+     * Applique les dés validés du joueur courant : or, gourdes, charpentiers, canons,
+     * puis amarrage à l'île si elle est libre.
+     * Si le capitaine sur l'île est touché, [GameState.islandHit] est rempli et il faut
+     * appeler [answerIslandAttack] avec sa décision.
+     */
     fun resolveDice(state: GameState): GameState {
-        // TODO : séries de pièces, dégâts des canons, réparations (pas sur l'île), gourdes,
-        //  amarrage si l'île est libre (+ISLAND_DOCK_BONUS).
-        return state
+        val me = state.currentIndex
+        val onIsland = state.islandHolder == me
+        val counts = state.dice.groupingBy { it }.eachCount()
+        fun count(face: DieFace) = counts[face] ?: 0
+
+        var s = state.updateCaptain(me) { c ->
+            c.copy(
+                gold = c.gold + coinGold(state.dice),
+                gourds = c.gourds + count(DieFace.GOURDE),
+                hull = if (onIsland) c.hull else minOf(GameRules.MAX_HULL, c.hull + count(DieFace.CHARPENTIER)),
+            )
+        }
+        val cannons = count(DieFace.CANON)
+        if (cannons > 0) s = fireCannons(s, cannons)
+        if (s.islandHolder == null && s.islandHit == null) s = dock(s, me)
+        return s
     }
 
-    /** Le capitaine sur l'île choisit de fuir : l'attaquant prend sa place. */
-    fun fleeIsland(state: GameState, attackerIndex: Int): GameState {
-        // TODO : à vérifier quand resolveDice sera écrit.
-        return state.copy(islandHolder = attackerIndex)
+    /** Or rapporté par les dés : 3 faces identiques = leur valeur, +1 par face identique en plus. */
+    fun coinGold(dice: List<DieFace>): Int =
+        dice.filter { it.coinValue > 0 }
+            .groupingBy { it }
+            .eachCount()
+            .entries
+            .sumOf { (face, n) -> if (n >= 3) face.coinValue + (n - 3) else 0 }
+
+    /** Réponse du capitaine sur l'île à l'attaque : s'il fuit, l'attaquant prend sa place. */
+    fun answerIslandAttack(state: GameState, flee: Boolean): GameState {
+        val hit = state.islandHit ?: return state
+        val answered = state.copy(islandHit = null)
+        return if (flee) dock(answered, hit.attackerIndex) else answered
     }
 
     /** Passe au joueur suivant encore à flot. */
@@ -60,4 +91,26 @@ object GameEngine {
         val afloat = state.captains.filter { !it.isSunk }
         return afloat.singleOrNull()
     }
+
+    /** Depuis l'île, les canons touchent tous les autres ; au large, seulement celui sur l'île. */
+    private fun fireCannons(state: GameState, damage: Int): GameState {
+        val me = state.currentIndex
+        val holder = state.islandHolder ?: return state
+        if (holder == me) {
+            return state.copy(captains = state.captains.mapIndexed { i, c ->
+                if (i == me || c.isSunk) c else c.damaged(damage)
+            })
+        }
+        val hit = state.updateCaptain(holder) { it.damaged(damage) }
+        return if (hit.captains[holder].isSunk) hit.copy(islandHolder = null)
+        else hit.copy(islandHit = IslandHit(attackerIndex = me, damage = damage))
+    }
+
+    /** Le capitaine [index] s'amarre à l'île : +1 or. */
+    private fun dock(state: GameState, index: Int): GameState =
+        state.copy(islandHolder = index)
+            .updateCaptain(index) { it.copy(gold = it.gold + GameRules.ISLAND_DOCK_BONUS) }
+
+    private fun GameState.updateCaptain(index: Int, transform: (Captain) -> Captain): GameState =
+        copy(captains = captains.mapIndexed { i, c -> if (i == index) transform(c) else c })
 }

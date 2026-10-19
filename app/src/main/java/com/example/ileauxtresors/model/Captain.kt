@@ -11,4 +11,6 @@ data class Captain(
     val cards: List<ButinCard> = emptyList(),
 ) {
     val isSunk: Boolean get() = hull <= 0
+
+    fun damaged(damage: Int): Captain = copy(hull = maxOf(0, hull - damage))
 }

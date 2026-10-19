@@ -27,8 +27,12 @@ fun ReglesPage(
                 "Lance ${GameRules.DICE_COUNT} dés, relance jusqu'à 2 fois, puis valide. " +
                 "Si l'île est libre, amarre-toi : +${GameRules.ISLAND_DOCK_BONUS} or.",
         )
-        Rule("Pièces", "Une série de pièces identiques rapporte une pièce en plus.")
-        Rule("Canon", "1 dégât par canon.")
+        Rule(
+            "Pièces",
+            "3 faces identiques rapportent leur valeur (cuivre 1, argent 2, or 3), " +
+                "+1 or par face identique en plus.",
+        )
+        Rule("Canon", "1 dégât par canon. Depuis l'île, touche tous les autres ; au large, touche celui sur l'île.")
         Rule("Charpentier", "Répare 1 point de coque. Impossible sur l'île.")
         Rule("Gourde", "1 gourde d'eau, à dépenser à la Taverne du Butin.")
         Rule("L'île", "Un pirate touché sur l'île peut fuir : l'attaquant prend sa place.")

@@ -56,7 +56,15 @@ private fun PageHost(modifier: Modifier = Modifier, vm: GameViewModel = viewMode
                 onValider = vm::validateDice,
                 modifier = modifier,
             )
-            if (vm.page == Page.ATTAQUE) AttaquePopup(onRester = vm::stayOnIsland, onFuir = vm::fleeIsland)
+            val hit = game.islandHit
+            if (vm.page == Page.ATTAQUE && hit != null) {
+                AttaquePopup(
+                    attackerName = game.captains[hit.attackerIndex].name,
+                    damage = hit.damage,
+                    onRester = { vm.answerAttack(flee = false) },
+                    onFuir = { vm.answerAttack(flee = true) },
+                )
+            }
         }
         Page.TAVERNE -> if (game != null) TavernePage(game, onFinDuTour = vm::endTurn, modifier = modifier)
         Page.FIN -> if (game != null) FinPage(game, onRejouer = vm::replay, onMenu = vm::backToMenu, modifier = modifier)
