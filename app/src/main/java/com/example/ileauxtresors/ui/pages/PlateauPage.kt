@@ -57,6 +57,12 @@ fun PlateauPage(
 
         CaptainCard(game.player, Modifier.fillMaxWidth())
 
+        // Pendant le tour d'un bot (popup ATTAQUE), on n'affiche pas ses dés.
+        if (game.currentIndex != GameState.PLAYER_INDEX) {
+            Text("${game.current.name} joue…", style = MaterialTheme.typography.labelLarge)
+            return@PageScaffold
+        }
+
         val rollNumber = GameRules.ROLLS_PER_TURN - game.rollsLeft
         Text("Lancer $rollNumber/${GameRules.ROLLS_PER_TURN}", style = MaterialTheme.typography.labelLarge)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

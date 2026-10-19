@@ -74,6 +74,35 @@ object GameEngine {
         return if (flee) dock(answered, hit.attackerIndex) else answered
     }
 
+    fun canBuy(state: GameState, cardIndex: Int): Boolean {
+        val card = state.tavernCards.getOrNull(cardIndex) ?: return false
+        return state.current.gourds >= card.cost
+    }
+
+    /** Le joueur courant achète une carte visible : il paie en gourdes, l'effet s'applique, la carte est remplacée. */
+    fun buyCard(state: GameState, cardIndex: Int): GameState {
+        if (!canBuy(state, cardIndex)) return state
+        val card = state.tavernCards[cardIndex]
+        val paid = state.updateCaptain(state.currentIndex) { it.copy(gourds = it.gourds - card.cost) }
+        val refilled = paid.copy(
+            tavernCards = paid.tavernCards.filterIndexed { i, _ -> i != cardIndex } + paid.deck.take(1),
+            deck = paid.deck.drop(1),
+        )
+        return applyEffect(refilled, card.effect)
+    }
+
+    /** Balayer : le joueur courant paie [GameRules.SWEEP_COST] gourdes pour remplacer les cartes visibles. */
+    fun sweepTavern(state: GameState): GameState {
+        if (state.current.gourds < GameRules.SWEEP_COST) return state
+        val paid = state.updateCaptain(state.currentIndex) { it.copy(gourds = it.gourds - GameRules.SWEEP_COST) }
+        // Les cartes balayées repartent sous la pioche.
+        val pile = paid.deck + paid.tavernCards
+        return paid.copy(
+            tavernCards = pile.take(GameRules.TAVERN_VISIBLE_CARDS),
+            deck = pile.drop(GameRules.TAVERN_VISIBLE_CARDS),
+        )
+    }
+
     /** Passe au joueur suivant encore à flot. */
     fun nextTurn(state: GameState): GameState {
         val count = state.captains.size
@@ -104,6 +133,34 @@ object GameEngine {
         val hit = state.updateCaptain(holder) { it.damaged(damage) }
         return if (hit.captains[holder].isSunk) hit.copy(islandHolder = null)
         else hit.copy(islandHit = IslandHit(attackerIndex = me, damage = damage))
+    }
+
+    private fun applyEffect(state: GameState, effect: ButinEffect): GameState {
+        val me = state.currentIndex
+        return when (effect) {
+            is ButinEffect.GainGold -> state.updateCaptain(me) { it.copy(gold = it.gold + effect.amount) }
+            is ButinEffect.Repair ->
+                state.updateCaptain(me) { it.copy(hull = minOf(GameRules.MAX_HULL, it.hull + effect.amount)) }
+            is ButinEffect.DamageOthers -> {
+                val damaged = state.copy(captains = state.captains.mapIndexed { i, c ->
+                    if (i == me || c.isSunk) c else c.damaged(effect.amount)
+                })
+                // Un capitaine coulé libère l'île.
+                val holder = damaged.islandHolder
+                if (holder != null && damaged.captains[holder].isSunk) damaged.copy(islandHolder = null, islandHit = null)
+                else damaged
+            }
+            is ButinEffect.Plunder -> {
+                var taken = 0
+                val robbed = state.copy(captains = state.captains.mapIndexed { i, c ->
+                    if (i == me || c.isSunk) return@mapIndexed c
+                    val loss = minOf(effect.amount, c.gold)
+                    taken += loss
+                    c.copy(gold = c.gold - loss)
+                })
+                robbed.updateCaptain(me) { it.copy(gold = it.gold + taken) }
+            }
+        }
     }
 
     /** Le capitaine [index] s'amarre à l'île : +1 or. */

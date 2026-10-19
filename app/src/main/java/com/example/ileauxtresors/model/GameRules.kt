@@ -12,6 +12,8 @@ object GameRules {
     /** S'amarrer à l'île quand elle est libre. */
     const val ISLAND_DOCK_BONUS = 1
     const val TAVERN_VISIBLE_CARDS = 3
+    /** Prix en gourdes pour remplacer les 3 cartes visibles. */
+    const val SWEEP_COST = 2
 
     // TODO(groupe) : valeur à confirmer (10 dans King of Tokyo).
     const val MAX_HULL = 10

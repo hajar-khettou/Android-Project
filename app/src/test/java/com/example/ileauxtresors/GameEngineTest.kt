@@ -1,5 +1,8 @@
 package com.example.ileauxtresors
 
+import com.example.ileauxtresors.model.ButinCard
+import com.example.ileauxtresors.model.ButinDeck
+import com.example.ileauxtresors.model.ButinEffect
 import com.example.ileauxtresors.model.DieFace
 import com.example.ileauxtresors.model.GameEngine
 import com.example.ileauxtresors.model.GameRules
@@ -127,6 +130,60 @@ class GameEngineTest {
     fun startTurn_givesBonusOnlyToTheIslandHolder() {
         assertEquals(GameRules.ISLAND_START_BONUS, GameEngine.startTurn(newGame.copy(islandHolder = 0)).player.gold)
         assertEquals(0, GameEngine.startTurn(newGame.copy(islandHolder = 1)).player.gold)
+    }
+
+    private fun withPlayerGourds(gourds: Int, cards: List<ButinCard>, deck: List<ButinCard> = emptyList()) =
+        newGame.copy(
+            captains = newGame.captains.mapIndexed { i, c -> if (i == 0) c.copy(gourds = gourds) else c },
+            tavernCards = cards,
+            deck = deck,
+        )
+
+    private fun card(cost: Int, effect: ButinEffect) = ButinCard("Test", cost, "", effect)
+
+    @Test
+    fun newGame_showsThreeTavernCards() {
+        assertEquals(GameRules.TAVERN_VISIBLE_CARDS, newGame.tavernCards.size)
+        assertEquals(ButinDeck.cards.size, newGame.tavernCards.size + newGame.deck.size)
+    }
+
+    @Test
+    fun buyCard_paysAppliesEffectAndRefills() {
+        val gold = card(3, ButinEffect.GainGold(2))
+        val next = card(1, ButinEffect.Repair(1))
+        val s = GameEngine.buyCard(withPlayerGourds(4, listOf(gold), deck = listOf(next)), 0)
+        assertEquals(1, s.player.gourds)
+        assertEquals(2, s.player.gold)
+        assertEquals(listOf(next), s.tavernCards)
+        assertTrue(s.deck.isEmpty())
+    }
+
+    @Test
+    fun buyCard_refusedWithoutEnoughGourds() {
+        val state = withPlayerGourds(2, listOf(card(3, ButinEffect.GainGold(2))))
+        assertEquals(state, GameEngine.buyCard(state, 0))
+    }
+
+    @Test
+    fun buyCard_damageAndPlunderHitOnlyOthers() {
+        val rich = withPlayerGourds(10, listOf(card(1, ButinEffect.DamageOthers(2)), card(1, ButinEffect.Plunder(1))))
+            .let { s -> s.copy(captains = s.captains.mapIndexed { i, c -> if (i == 1) c.copy(gold = 3) else c }) }
+        val damaged = GameEngine.buyCard(rich, 0)
+        assertEquals(GameRules.MAX_HULL, damaged.player.hull)
+        assertTrue(damaged.bots.all { it.hull == GameRules.MAX_HULL - 2 })
+
+        val plundered = GameEngine.buyCard(damaged, 0)
+        assertEquals(1, plundered.player.gold)
+        assertEquals(2, plundered.captains[1].gold)
+    }
+
+    @Test
+    fun sweepTavern_replacesVisibleCardsAndCostsGourds() {
+        val state = withPlayerGourds(GameRules.SWEEP_COST, newGame.tavernCards, newGame.deck)
+        val s = GameEngine.sweepTavern(state)
+        assertEquals(0, s.player.gourds)
+        assertEquals(state.deck.take(3), s.tavernCards)
+        assertEquals(state.tavernCards, s.deck.takeLast(3))
     }
 
     @Test

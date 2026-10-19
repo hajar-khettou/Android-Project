@@ -66,7 +66,15 @@ private fun PageHost(modifier: Modifier = Modifier, vm: GameViewModel = viewMode
                 )
             }
         }
-        Page.TAVERNE -> if (game != null) TavernePage(game, onFinDuTour = vm::endTurn, modifier = modifier)
+        Page.TAVERNE -> if (game != null) {
+            TavernePage(
+                game = game,
+                onAcheter = vm::buyCard,
+                onBalayer = vm::sweepTavern,
+                onFinDuTour = vm::endTurn,
+                modifier = modifier,
+            )
+        }
         Page.FIN -> if (game != null) FinPage(game, onRejouer = vm::replay, onMenu = vm::backToMenu, modifier = modifier)
     }
 }

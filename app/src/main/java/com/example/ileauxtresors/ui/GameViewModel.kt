@@ -40,6 +40,13 @@ class GameViewModel : ViewModel() {
         if (!goToFinIfOver()) goToPage(Page.TAVERNE)
     }
 
+    fun buyCard(index: Int) {
+        update { GameEngine.buyCard(it, index) }
+        goToFinIfOver()
+    }
+
+    fun sweepTavern() = update { GameEngine.sweepTavern(it) }
+
     /** Fin du tour du joueur : les bots jouent, puis on revient au joueur. */
     fun endTurn() {
         val current = game ?: return

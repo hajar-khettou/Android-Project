@@ -1,5 +1,7 @@
 package com.example.ileauxtresors.model
 
+import kotlin.random.Random
+
 /** Le capitaine sur l'île vient d'être touché : il doit choisir de rester ou de fuir. */
 data class IslandHit(val attackerIndex: Int, val damage: Int)
 
@@ -16,7 +18,10 @@ data class GameState(
     /** Index des dés gardés (« GARDÉ ») qui ne seront pas relancés. */
     val keptDice: Set<Int> = emptySet(),
     val rollsLeft: Int = GameRules.ROLLS_PER_TURN,
+    /** Les cartes visibles à la Taverne. */
     val tavernCards: List<ButinCard> = emptyList(),
+    /** La pioche, face cachée. */
+    val deck: List<ButinCard> = emptyList(),
     val turn: Int = 1,
 ) {
     /** Le joueur humain est toujours le premier de la liste. */
@@ -27,13 +32,18 @@ data class GameState(
     companion object {
         const val PLAYER_INDEX = 0
 
-        /** Le joueur prend le navire choisi, les 3 bots prennent les autres. */
-        fun newGame(playerName: String, playerShip: Ship): GameState {
+        /** Le joueur prend le navire choisi, les 3 bots prennent les autres. La Taverne montre 3 cartes. */
+        fun newGame(playerName: String, playerShip: Ship, random: Random = Random.Default): GameState {
             val player = Captain(name = playerName, ship = playerShip, isBot = false)
             val bots = Ship.entries
                 .filter { it != playerShip }
                 .map { Captain(name = it.displayName, ship = it, isBot = true) }
-            return GameState(captains = listOf(player) + bots)
+            val deck = ButinDeck.cards.shuffled(random)
+            return GameState(
+                captains = listOf(player) + bots,
+                tavernCards = deck.take(GameRules.TAVERN_VISIBLE_CARDS),
+                deck = deck.drop(GameRules.TAVERN_VISIBLE_CARDS),
+            )
         }
     }
 }
