@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Face Charpentier : un marteau. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="-35">
+        <!-- Manche -->
+        <path
+            android:fillColor="#8D5524"
+            android:pathData="M10.75,8 h2.5 v15 h-2.5 Z" />
+        <!-- Tête -->
+        <path
+            android:fillColor="#546E7A"
+            android:pathData="M4,3 h12 v5.5 h-12 Z" />
+        <!-- Panne fendue -->
+        <path
+            android:fillColor="#546E7A"
+            android:pathData="M16,3 L20.5,1.5 L19,5.75 L20.5,10 L16,8.5 Z" />
+        <path
+            android:fillColor="#90A4AE"
+            android:pathData="M4,3 h12 v1.5 h-12 Z" />
+    </group>
+</vector>

@@ -25,6 +25,7 @@ import com.example.ileauxtresors.model.GameRules
 import com.example.ileauxtresors.model.GameState
 import com.example.ileauxtresors.model.Ship
 import com.example.ileauxtresors.navigation.PageGroup
+import com.example.ileauxtresors.ui.components.DieFaceIcon
 import com.example.ileauxtresors.ui.components.PageScaffold
 import com.example.ileauxtresors.ui.theme.Gold
 import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
@@ -104,9 +105,8 @@ private fun DieView(face: DieFace, kept: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         border = if (kept) BorderStroke(3.dp, Gold) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
-        // TODO : icônes des faces à la place du texte.
         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-            Text(face.label.take(5), style = MaterialTheme.typography.labelSmall)
+            DieFaceIcon(face, size = 34.dp)
         }
     }
 }
