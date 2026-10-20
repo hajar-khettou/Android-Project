@@ -17,6 +17,7 @@ import com.example.ileauxtresors.navigation.PageGroup
 import com.example.ileauxtresors.ui.components.DieFaceIcon
 import com.example.ileauxtresors.ui.components.PageScaffold
 import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
+import com.example.ileauxtresors.ui.theme.MenuBlue
 
 /** Page.REGLES : Retour → ACCUEIL. */
 @Composable
@@ -25,18 +26,41 @@ fun ReglesPage(
     modifier: Modifier = Modifier,
 ) {
     PageScaffold(title = "Règles", group = PageGroup.MENU, modifier = modifier) {
-        // TODO : texte complet et mis en forme des règles.
-        Rule("But", "Atteindre ${GameRules.GOLD_TO_WIN} pièces d'or, ou être le dernier navire à flot.")
+        Section("Le jeu")
         Rule(
-            "Ton tour",
-            "Si tu commences sur l'île : +${GameRules.ISLAND_START_BONUS} or. " +
-                "Lance ${GameRules.DICE_COUNT} dés, relance jusqu'à 2 fois, puis valide. " +
-                "Si l'île est libre, amarre-toi : +${GameRules.ISLAND_DOCK_BONUS} or.",
+            "But",
+            "${GameRules.PLAYER_COUNT} capitaines, 1 île. Le premier à ${GameRules.GOLD_TO_WIN} pièces d'or gagne. " +
+                "Si un navire coule (coque à 0), il est éliminé : le dernier à flot gagne aussi.",
         )
+        Rule(
+            "Ton navire",
+            "Tu commences avec ${GameRules.MAX_HULL} points de coque, 0 or et 0 gourde.",
+        )
+
+        Section("Ton tour")
+        Rule(
+            "1. Sur l'île ?",
+            "Si tu commences ton tour sur l'île : +${GameRules.ISLAND_START_BONUS} or.",
+        )
+        Rule(
+            "2. Les dés",
+            "Lance les ${GameRules.DICE_COUNT} dés. Touche un dé pour le garder, puis relance les autres, " +
+                "jusqu'à ${GameRules.ROLLS_PER_TURN - 1} fois. Valide pour appliquer le résultat.",
+        )
+        Rule(
+            "3. L'amarrage",
+            "Si l'île est libre après tes dés, tu t'y amarres : +${GameRules.ISLAND_DOCK_BONUS} or.",
+        )
+        Rule(
+            "4. La Taverne",
+            "Dépense tes gourdes pour acheter des cartes Butin, puis termine ton tour.",
+        )
+
+        Section("Les faces des dés")
         Rule(
             "Pièces",
             "3 faces identiques rapportent leur valeur (cuivre 1, argent 2, or 3), " +
-                "+1 or par face identique en plus.",
+                "+1 or par face identique en plus. Ex. : 4 argent = 3 or.",
             faces = listOf(DieFace.CUIVRE, DieFace.ARGENT, DieFace.OR),
         )
         Rule(
@@ -44,11 +68,41 @@ fun ReglesPage(
             "1 dégât par canon. Depuis l'île, touche tous les autres ; au large, touche celui sur l'île.",
             faces = listOf(DieFace.CANON),
         )
-        Rule("Charpentier", "Répare 1 point de coque. Impossible sur l'île.", faces = listOf(DieFace.CHARPENTIER))
+        Rule(
+            "Charpentier",
+            "Répare 1 point de coque (max ${GameRules.MAX_HULL}). Impossible sur l'île.",
+            faces = listOf(DieFace.CHARPENTIER),
+        )
         Rule("Gourde", "1 gourde d'eau, à dépenser à la Taverne du Butin.", faces = listOf(DieFace.GOURDE))
-        Rule("L'île", "Un pirate touché sur l'île peut fuir : l'attaquant prend sa place.")
+
+        Section("L'île")
+        Rule(
+            "Tenir l'île",
+            "Sur l'île, tes canons touchent tout le monde et tu gagnes de l'or à chaque tour, " +
+                "mais tu ne peux pas te réparer.",
+        )
+        Rule(
+            "Fuir",
+            "Touché sur l'île, tu choisis : rester, ou fuir au large. Si tu fuis, ton attaquant prend ta place.",
+        )
+
+        Section("La Taverne du Butin")
+        Rule(
+            "Cartes Butin",
+            "${GameRules.TAVERN_VISIBLE_CARDS} cartes sont visibles. Chacune coûte des gourdes et agit tout de suite : " +
+                "or, réparation, bordée sur les autres navires ou pillage.",
+        )
+        Rule(
+            "Balayer",
+            "Pour ${GameRules.SWEEP_COST} gourdes, remplace les ${GameRules.TAVERN_VISIBLE_CARDS} cartes visibles.",
+        )
         OutlinedButton(onClick = onRetour, modifier = Modifier.fillMaxWidth()) { Text("Retour") }
     }
+}
+
+@Composable
+private fun Section(title: String) {
+    Text(title, style = MaterialTheme.typography.titleLarge, color = MenuBlue)
 }
 
 @Composable

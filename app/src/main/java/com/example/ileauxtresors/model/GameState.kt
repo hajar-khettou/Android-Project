@@ -5,6 +5,9 @@ import kotlin.random.Random
 /** Le capitaine sur l'île vient d'être touché : il doit choisir de rester ou de fuir. */
 data class IslandHit(val attackerIndex: Int, val damage: Int)
 
+/** Une ligne du classement de fin. Les ex aequo partagent le même [rank]. */
+data class RankedCaptain(val rank: Int, val captain: Captain)
+
 /** Tout l'état d'une partie. Immuable : chaque action renvoie un nouveau GameState. */
 data class GameState(
     val captains: List<Captain>,

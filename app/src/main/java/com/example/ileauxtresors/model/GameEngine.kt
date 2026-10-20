@@ -121,6 +121,21 @@ object GameEngine {
         return afloat.singleOrNull()
     }
 
+    /**
+     * Le classement de fin : le vainqueur, puis les navires à flot, puis les coulés.
+     * À égalité, le plus d'or passe devant, puis la coque la plus solide.
+     */
+    fun ranking(state: GameState): List<RankedCaptain> {
+        val winner = winner(state)
+        val order = compareBy<Captain>({ it != winner }, { it.isSunk }, { -it.gold }, { -it.hull })
+        val sorted = state.captains.sortedWith(order)
+        var rank = 0
+        return sorted.mapIndexed { i, c ->
+            if (i == 0 || order.compare(sorted[i - 1], c) != 0) rank = i + 1
+            RankedCaptain(rank, c)
+        }
+    }
+
     /** Depuis l'île, les canons touchent tous les autres ; au large, seulement celui sur l'île. */
     private fun fireCannons(state: GameState, damage: Int): GameState {
         val me = state.currentIndex

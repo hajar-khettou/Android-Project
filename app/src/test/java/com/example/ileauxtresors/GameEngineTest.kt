@@ -193,4 +193,33 @@ class GameEngineTest {
         })
         assertEquals(2, GameEngine.nextTurn(state).currentIndex)
     }
+
+    @Test
+    fun ranking_putsWinnerFirstThenAfloatThenSunk() {
+        val state = newGame.copy(captains = newGame.captains.mapIndexed { i, c ->
+            when (i) {
+                0 -> c.copy(hull = 0, gold = 15)
+                1 -> c.copy(gold = GameRules.GOLD_TO_WIN)
+                2 -> c.copy(gold = 5)
+                else -> c.copy(gold = 9)
+            }
+        })
+        val ranking = GameEngine.ranking(state)
+        assertEquals(listOf(1, 3, 2, 0).map { state.captains[it] }, ranking.map { it.captain })
+        assertEquals(listOf(1, 2, 3, 4), ranking.map { it.rank })
+    }
+
+    @Test
+    fun ranking_breaksGoldTiesOnHullAndSharesFullTies() {
+        val state = newGame.copy(captains = newGame.captains.mapIndexed { i, c ->
+            when (i) {
+                0 -> c.copy(gold = 7, hull = 4)
+                1 -> c.copy(gold = 7, hull = 8)
+                else -> c.copy(gold = 3, hull = 5)
+            }
+        })
+        val ranking = GameEngine.ranking(state)
+        assertEquals(listOf(1, 0), ranking.take(2).map { state.captains.indexOf(it.captain) })
+        assertEquals(listOf(1, 2, 3, 3), ranking.map { it.rank })
+    }
 }
