@@ -14,16 +14,29 @@ object BotPlayer {
     /** Coque en dessous de laquelle un bot au large n'attaque plus l'île. */
     private const val SAFE_HULL_TO_ATTACK = 5
 
-    fun playTurn(state: GameState, random: Random = Random.Default): GameState {
+    fun playTurn(state: GameState, random: Random = Random.Default): GameState = playTurnSteps(state, random).last()
+
+    /**
+     * Le tour du bot étape par étape, pour le montrer au joueur : chaque lancer, chaque choix
+     * de dés gardés, les dés appliqués, puis la fin du tour (après ses achats à la Taverne).
+     */
+    fun playTurnSteps(state: GameState, random: Random = Random.Default): List<GameState> {
+        val steps = mutableListOf<GameState>()
         var s = GameEngine.rollDice(state, random)
+        steps += s
         while (s.rollsLeft > 0) {
             val keep = chooseKeptDice(s)
             // Tous les dés sont utiles : inutile de relancer.
             if (keep.size == s.dice.size) break
-            s = GameEngine.rollDice(s.copy(keptDice = keep), random)
+            s = s.copy(keptDice = keep)
+            steps += s
+            s = GameEngine.rollDice(s, random)
+            steps += s
         }
         s = GameEngine.resolveDice(s)
-        return shop(s)
+        steps += s
+        steps += shop(s)
+        return steps
     }
 
     /**

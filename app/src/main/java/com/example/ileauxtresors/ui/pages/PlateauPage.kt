@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.ileauxtresors.model.Captain
 import com.example.ileauxtresors.model.DieFace
+import com.example.ileauxtresors.model.GameEngine
 import com.example.ileauxtresors.model.GameRules
 import com.example.ileauxtresors.model.GameState
 import com.example.ileauxtresors.model.Ship
@@ -58,6 +61,7 @@ import com.example.ileauxtresors.ui.components.ShipIcon
 import com.example.ileauxtresors.ui.theme.Cream
 import com.example.ileauxtresors.ui.theme.Gold
 import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
+import com.example.ileauxtresors.ui.theme.Ink
 import com.example.ileauxtresors.ui.theme.InkSoft
 import com.example.ileauxtresors.ui.theme.Night
 import com.example.ileauxtresors.ui.theme.Parchment
@@ -65,11 +69,12 @@ import com.example.ileauxtresors.ui.theme.SandDark
 import com.example.ileauxtresors.ui.theme.Sea
 import com.example.ileauxtresors.ui.theme.Wood
 import com.example.ileauxtresors.ui.theme.WoodDark
+import kotlinx.coroutines.delay
 
 /**
  * Page.PLATEAU : bots, île, stats du joueur, 6 dés.
  * Valider les dés → TAVERNE. ATTAQUE et FIN sont déclenchées par le GameViewModel.
- * Pendant le tour d'un bot, on voit qui joue et ses dés, sans pouvoir agir.
+ * Pendant le tour d'un bot, on voit chacun de ses lancers puis son résumé, jusqu'à « Continuer ».
  */
 @Composable
 fun PlateauPage(
@@ -79,69 +84,135 @@ fun PlateauPage(
     onValider: () -> Unit,
     onRegles: () -> Unit,
     onQuitter: () -> Unit,
+    onContinuer: () -> Unit,
     modifier: Modifier = Modifier,
     botLog: List<String> = emptyList(),
+    botSummary: String? = null,
 ) {
     val playerTurn = game.currentIndex == GameState.PLAYER_INDEX
-    PageScaffold(
-        backdrop = Backdrop.NUIT,
-        modifier = modifier,
-        header = {
-            PageHeader(
-                title = if (game.islandHolder == GameState.PLAYER_INDEX) "Sur l'île" else "Au large",
-                start = { Pill("Tour ${game.turn}") },
-                end = { GameMenu(enabled = playerTurn, onRegles = onRegles, onQuitter = onQuitter) },
-            )
-        },
-        bottomBar = {
-            if (playerTurn) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PirateButton(
-                        if (game.dice.isEmpty()) "Lancer" else "↻ Relancer",
-                        onClick = onLancer,
-                        enabled = game.rollsLeft > 0,
-                        style = PirateButtonStyle.BOIS,
-                        modifier = Modifier.weight(1f),
-                    )
-                    PirateButton(
-                        "Valider les dés",
-                        onClick = onValider,
-                        enabled = game.dice.isNotEmpty(),
-                        modifier = Modifier.weight(1.4f),
-                    )
+    var showTaverne by rememberSaveable { mutableStateOf(false) }
+
+    Box(modifier) {
+        PageScaffold(
+            backdrop = Backdrop.NUIT,
+            header = {
+                PageHeader(
+                    title = if (game.islandHolder == GameState.PLAYER_INDEX) "Sur l'île" else "Au large",
+                    start = { Pill("Tour ${game.turn}") },
+                    end = {
+                        GameMenu(
+                            rulesEnabled = playerTurn,
+                            onTaverne = { showTaverne = true },
+                            onRegles = onRegles,
+                            onQuitter = onQuitter,
+                        )
+                    },
+                )
+            },
+            bottomBar = {
+                when {
+                    playerTurn -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        PirateButton(
+                            if (game.dice.isEmpty()) "Lancer" else "↻ Relancer",
+                            onClick = onLancer,
+                            enabled = game.rollsLeft > 0,
+                            style = PirateButtonStyle.BOIS,
+                            modifier = Modifier.weight(1f),
+                        )
+                        PirateButton(
+                            "Valider les dés",
+                            onClick = onValider,
+                            enabled = game.dice.isNotEmpty(),
+                            modifier = Modifier.weight(1.4f),
+                        )
+                    }
+                    botSummary != null -> {
+                        val next = GameEngine.nextTurn(game)
+                        PirateButton(
+                            if (next.currentIndex == GameState.PLAYER_INDEX) "À moi de jouer ▸" else "Au tour de ${next.current.name} ▸",
+                            onClick = onContinuer,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            },
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                game.captains.forEachIndexed { i, c ->
+                    if (i != GameState.PLAYER_INDEX) {
+                        BotCard(
+                            captain = c,
+                            onIsland = game.islandHolder == i,
+                            playing = game.currentIndex == i,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
-        },
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            game.captains.forEachIndexed { i, c ->
-                if (i != GameState.PLAYER_INDEX) {
-                    BotCard(
-                        captain = c,
-                        onIsland = game.islandHolder == i,
-                        playing = game.currentIndex == i,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+
+            Island(game)
+            PlayerCard(game.player, playing = playerTurn)
+            DiceTray(game, playerTurn, botSummary, onToggleKeep)
+            if (botLog.isNotEmpty()) BotLogCard(botLog)
         }
 
-        Island(game)
-        if (botLog.isNotEmpty()) BotLogCard(botLog)
-        PlayerCard(game.player)
-        DiceTray(game, playerTurn, onToggleKeep)
+        YourTurnAnnouncement(game)
+    }
+
+    if (showTaverne) TaverneApercu(game, onClose = { showTaverne = false })
+}
+
+/** Le menu ☰ : voir la Taverne, revoir les règles (pas pendant le tour des bots), quitter. */
+@Composable
+private fun GameMenu(rulesEnabled: Boolean, onTaverne: () -> Unit, onRegles: () -> Unit, onQuitter: () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        RoundIconButton("☰", "Menu", onClick = { open = true })
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Parchment) {
+            DropdownMenuItem(text = { Text("Voir la Taverne") }, onClick = { open = false; onTaverne() })
+            DropdownMenuItem(text = { Text("Règles") }, enabled = rulesEnabled, onClick = { open = false; onRegles() })
+            DropdownMenuItem(text = { Text("Quitter la partie") }, onClick = { open = false; onQuitter() })
+        }
     }
 }
 
-/** Le menu ☰ : revoir les règles ou quitter la partie. Désactivé pendant le tour des bots. */
+/**
+ * « À toi de jouer ! » en grand au début de chaque tour du joueur, pour qu'il voie que
+ * la main lui revient. Disparaît tout seul, ou en touchant l'écran.
+ */
 @Composable
-private fun GameMenu(enabled: Boolean, onRegles: () -> Unit, onQuitter: () -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        RoundIconButton("☰", "Menu", onClick = { open = true }, enabled = enabled)
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Parchment) {
-            DropdownMenuItem(text = { Text("Règles") }, onClick = { open = false; onRegles() })
-            DropdownMenuItem(text = { Text("Quitter la partie") }, onClick = { open = false; onQuitter() })
+private fun BoxScope.YourTurnAnnouncement(game: GameState) {
+    val playerTurn = game.currentIndex == GameState.PLAYER_INDEX
+    var visible by remember { mutableStateOf(false) }
+    // Une seule annonce par tour, même si on revient des règles.
+    var announcedTurn by rememberSaveable { mutableStateOf(0) }
+    LaunchedEffect(playerTurn, game.turn) {
+        if (playerTurn && game.dice.isEmpty() && announcedTurn != game.turn) {
+            announcedTurn = game.turn
+            visible = true
+            delay(1800)
+        }
+        visible = false
+    }
+    if (!visible) return
+    Box(
+        Modifier
+            .matchParentSize()
+            .background(Night.copy(alpha = 0.6f))
+            .clickable(onClickLabel = "Fermer") { visible = false },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier
+                .padding(32.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Gold)
+                .padding(horizontal = 32.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            CaptainAvatar(game.player, size = 56.dp)
+            Text("À toi de jouer !", color = Ink, style = MaterialTheme.typography.headlineLarge)
+            Text("Tour ${game.turn}", color = Ink, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -225,8 +296,8 @@ private fun BotLogCard(lines: List<String>) {
 }
 
 @Composable
-private fun PlayerCard(player: Captain) {
-    PirateCard(color = Parchment) {
+private fun PlayerCard(player: Captain, playing: Boolean) {
+    PirateCard(color = Parchment, selected = playing) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CaptainAvatar(player, size = 44.dp)
             Text(
@@ -254,12 +325,18 @@ private fun PlayerCard(player: Captain) {
     }
 }
 
-/** Le bac à dés en bois. Au tour d'un bot, on y voit ses dés. */
+/**
+ * Le bac à dés en bois, avec en tête qui joue. Au tour d'un bot, on y voit ses lancers,
+ * les dés qu'il garde, puis le résumé de son tour ([botSummary]).
+ */
 @Composable
-private fun DiceTray(game: GameState, playerTurn: Boolean, onToggleKeep: (Int) -> Unit) {
+private fun DiceTray(game: GameState, playerTurn: Boolean, botSummary: String?, onToggleKeep: (Int) -> Unit) {
     val rollNumber = GameRules.ROLLS_PER_TURN - game.rollsLeft
-    val title = when {
-        !playerTurn -> "${game.current.name} joue…"
+    val current = game.current
+    val hint = when {
+        botSummary != null -> botSummary.substringAfter(" : ")
+        !playerTurn && game.dice.isEmpty() -> "prépare ses dés…"
+        !playerTurn -> "Lancer $rollNumber / ${GameRules.ROLLS_PER_TURN}" + if (game.keptDice.isEmpty()) "" else " · garde ${game.keptDice.size} dé(s)"
         game.dice.isEmpty() -> "Lancez les dés !"
         game.rollsLeft == 0 -> "Lancer $rollNumber / ${GameRules.ROLLS_PER_TURN} · validez vos dés"
         else -> "Lancer $rollNumber / ${GameRules.ROLLS_PER_TURN} · touchez un dé pour le garder"
@@ -269,16 +346,24 @@ private fun DiceTray(game: GameState, playerTurn: Boolean, onToggleKeep: (Int) -
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
             .background(Wood)
-            .border(2.dp, WoodDark, RoundedCornerShape(20.dp))
+            .border(2.dp, if (playerTurn) Gold else WoodDark, RoundedCornerShape(20.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CaptainAvatar(current, size = 36.dp)
+            Text(
+                if (playerTurn) "À toi de jouer !" else "Tour de ${current.name}",
+                color = if (playerTurn) Gold else Cream,
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+        Text(hint, style = MaterialTheme.typography.labelLarge, color = if (botSummary != null) Gold else Cream)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             repeat(GameRules.DICE_COUNT) { i ->
                 DieView(
                     face = game.dice.getOrNull(i),
-                    kept = playerTurn && i in game.keptDice,
+                    kept = i in game.keptDice && game.dice.isNotEmpty(),
                     onClick = if (playerTurn && game.dice.isNotEmpty() && game.rollsLeft > 0) {
                         { onToggleKeep(i) }
                     } else {
@@ -336,6 +421,9 @@ private fun PlateauPagePreview() {
         "Jade Sabre : +2 or, achète « Tonneau de rhum »",
     )
     IleAuxTresorsTheme {
-        PlateauPage(game, onLancer = {}, onToggleKeep = {}, onValider = {}, onRegles = {}, onQuitter = {}, botLog = botLog)
+        PlateauPage(
+            game, onLancer = {}, onToggleKeep = {}, onValider = {}, onRegles = {}, onQuitter = {}, onContinuer = {},
+            botLog = botLog,
+        )
     }
 }

@@ -54,7 +54,9 @@ private fun PageHost(vm: GameViewModel = viewModel()) {
                 onValider = vm::validateDice,
                 onRegles = vm::openRules,
                 onQuitter = vm::askQuit,
+                onContinuer = vm::continueBots,
                 botLog = vm.botLog,
+                botSummary = vm.botSummary,
             )
             val hit = game.islandHit
             if (vm.page == Page.ATTAQUE && hit != null) {

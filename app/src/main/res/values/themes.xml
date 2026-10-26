@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.IleAuxTresors" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Fond nuit dès le lancement, pour éviter un flash blanc avant l'accueil. -->
+    <style name="Theme.IleAuxTresors" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/night</item>
+    </style>
 </resources>
