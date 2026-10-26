@@ -110,13 +110,17 @@ fun IslandScene(modifier: Modifier = Modifier, dockedShip: Ship? = null) {
     }
 }
 
-/** Le ciel de nuit de l'accueil : étoiles, lune, et la mer en bas avec un navire. */
+/**
+ * Le ciel de nuit de l'accueil : étoiles, lune, et la mer en bas avec un navire.
+ * [starsOnly] ne garde que les étoiles, pour les pages où le contenu occupe tout l'écran.
+ */
 @Composable
-fun NightSky(modifier: Modifier = Modifier) {
+fun NightSky(modifier: Modifier = Modifier, starsOnly: Boolean = false) {
     Canvas(modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
         Stars.forEach { (x, y) -> drawCircle(Cream.copy(alpha = 0.55f), 0.005f * w, Offset(x * w, y * h)) }
+        if (starsOnly) return@Canvas
 
         val moon = Offset(0.8f * w, 0.12f * h)
         drawCircle(NightLight, 0.12f * w, moon + Offset(0.03f * w, -0.01f * h))

@@ -25,6 +25,8 @@ import com.example.ileauxtresors.model.RankedCaptain
 import com.example.ileauxtresors.model.Ship
 import com.example.ileauxtresors.ui.components.Backdrop
 import com.example.ileauxtresors.ui.components.CaptainAvatar
+import com.example.ileauxtresors.ui.components.IslandScene
+import com.example.ileauxtresors.ui.components.NightSky
 import com.example.ileauxtresors.ui.components.PageScaffold
 import com.example.ileauxtresors.ui.components.PirateButton
 import com.example.ileauxtresors.ui.components.PirateButtonStyle
@@ -48,6 +50,7 @@ fun FinPage(
     PageScaffold(
         backdrop = Backdrop.NUIT,
         modifier = modifier,
+        scenery = { NightSky(starsOnly = true) },
         bottomBar = {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PirateButton("Menu", onClick = onMenu, style = PirateButtonStyle.CONTOUR, modifier = Modifier.weight(1f))
@@ -55,7 +58,9 @@ fun FinPage(
             }
         },
     ) {
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp))
+        // Le navire du vainqueur amarré à l'île ; l'île vide si la partie s'arrête sur ton naufrage.
+        IslandScene(dockedShip = winner?.ship)
         Text(
             if (won) "Victoire !" else "Défaite",
             color = if (won) Gold else Cream,
