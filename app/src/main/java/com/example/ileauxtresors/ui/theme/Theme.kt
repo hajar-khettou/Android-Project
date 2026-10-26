@@ -16,7 +16,7 @@ import com.example.ileauxtresors.R
 /** Police gothique des titres. */
 val Pirata = FontFamily(Font(R.font.pirata_one))
 
-/** Police arrondie du texte (police variable : les graisses marchent à partir d'Android 8). */
+/** Police arrondie du texte (police variable : une seule police pour toutes les graisses). */
 @OptIn(ExperimentalTextApi::class)
 val Nunito = FontFamily(
     listOf(FontWeight.Normal, FontWeight.SemiBold, FontWeight.Bold, FontWeight.ExtraBold).map { weight ->
