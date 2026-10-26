@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.ileauxtresors.bots.BotLog
 import com.example.ileauxtresors.bots.BotPlayer
 import com.example.ileauxtresors.model.GameEngine
 import com.example.ileauxtresors.model.GameState
@@ -22,12 +23,17 @@ class GameViewModel : ViewModel() {
     var game by mutableStateOf<GameState?>(null)
         private set
 
+    /** Ce que les bots ont fait depuis le dernier tour du joueur, une ligne par tour de bot. */
+    var botLog by mutableStateOf<List<String>>(emptyList())
+        private set
+
     fun goToPage(target: Page) {
         page = target
     }
 
     fun startGame(playerName: String, ship: Ship) {
         game = GameEngine.startTurn(GameState.newGame(playerName, ship))
+        botLog = emptyList()
         goToPage(Page.PLATEAU)
     }
 
@@ -50,6 +56,7 @@ class GameViewModel : ViewModel() {
     /** Fin du tour du joueur : les bots jouent, puis on revient au joueur. */
     fun endTurn() {
         val current = game ?: return
+        botLog = emptyList()
         playBots(GameEngine.nextTurn(current))
     }
 
@@ -76,7 +83,9 @@ class GameViewModel : ViewModel() {
     private fun playBots(start: GameState) {
         var state = start
         while (state.current.isBot && !isOver(state)) {
+            val before = state
             state = answerBotIslandHit(BotPlayer.playTurn(state))
+            botLog = botLog + BotLog.describeTurn(before, state)
             if (isOver(state)) break
             if (state.islandHit != null) {
                 game = state

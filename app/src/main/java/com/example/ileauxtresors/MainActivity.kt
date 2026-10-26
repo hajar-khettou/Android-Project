@@ -55,6 +55,7 @@ private fun PageHost(modifier: Modifier = Modifier, vm: GameViewModel = viewMode
                 onToggleKeep = vm::toggleKeep,
                 onValider = vm::validateDice,
                 modifier = modifier,
+                botLog = vm.botLog,
             )
             val hit = game.islandHit
             if (vm.page == Page.ATTAQUE && hit != null) {

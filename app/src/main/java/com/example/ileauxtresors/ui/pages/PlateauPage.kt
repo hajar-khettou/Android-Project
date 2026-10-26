@@ -41,11 +41,14 @@ fun PlateauPage(
     onToggleKeep: (index: Int) -> Unit,
     onValider: () -> Unit,
     modifier: Modifier = Modifier,
+    botLog: List<String> = emptyList(),
 ) {
     PageScaffold(title = "Au large · Tour ${game.turn}", group = PageGroup.PARTIE, modifier = modifier) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             game.bots.forEach { CaptainCard(it, Modifier.weight(1f)) }
         }
+
+        if (botLog.isNotEmpty()) BotLogCard(botLog)
 
         // TODO : illustration de l'île.
         val holder = game.islandHolder?.let { game.captains[it].name }
@@ -87,6 +90,17 @@ fun PlateauPage(
     }
 }
 
+/** Ce que les bots ont fait depuis ton dernier tour. */
+@Composable
+private fun BotLogCard(lines: List<String>) {
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Pendant ce temps…", style = MaterialTheme.typography.titleSmall)
+            lines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+        }
+    }
+}
+
 @Composable
 private fun CaptainCard(captain: Captain, modifier: Modifier = Modifier) {
     OutlinedCard(modifier) {
@@ -120,5 +134,10 @@ private fun PlateauPagePreview() {
         keptDice = setOf(0, 1),
         rollsLeft = 1,
     )
-    IleAuxTresorsTheme { PlateauPage(game, onLancer = {}, onToggleKeep = {}, onValider = {}) }
+    val botLog = listOf(
+        "Barbe-Grise : +3 or, s'amarre à l'île",
+        "Anne la Rouge : touche Barbe-Grise (−2), +1 gourde",
+        "Jade Sabre : +2 or, achète « Tonneau de rhum »",
+    )
+    IleAuxTresorsTheme { PlateauPage(game, onLancer = {}, onToggleKeep = {}, onValider = {}, botLog = botLog) }
 }
