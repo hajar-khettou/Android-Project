@@ -1,18 +1,21 @@
 package com.example.ileauxtresors.ui.pages
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.ileauxtresors.model.GameEngine
@@ -20,10 +23,17 @@ import com.example.ileauxtresors.model.GameRules
 import com.example.ileauxtresors.model.GameState
 import com.example.ileauxtresors.model.RankedCaptain
 import com.example.ileauxtresors.model.Ship
-import com.example.ileauxtresors.navigation.PageGroup
+import com.example.ileauxtresors.ui.components.Backdrop
+import com.example.ileauxtresors.ui.components.CaptainAvatar
 import com.example.ileauxtresors.ui.components.PageScaffold
+import com.example.ileauxtresors.ui.components.PirateButton
+import com.example.ileauxtresors.ui.components.PirateButtonStyle
+import com.example.ileauxtresors.ui.components.PirateCard
+import com.example.ileauxtresors.ui.theme.Cream
 import com.example.ileauxtresors.ui.theme.Gold
 import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
+import com.example.ileauxtresors.ui.theme.InkSoft
+import com.example.ileauxtresors.ui.theme.Parchment
 
 /** Page.FIN : victoire ou défaite, classement. Rejouer → CAPITAINE · Menu → ACCUEIL. */
 @Composable
@@ -35,14 +45,33 @@ fun FinPage(
 ) {
     val winner = GameEngine.winner(game)
     val won = winner == game.player
-    PageScaffold(title = if (won) "Victoire !" else "Défaite", group = PageGroup.FIN, modifier = modifier) {
-        Text(endReason(game), style = MaterialTheme.typography.bodyLarge)
-        Text("Classement", style = MaterialTheme.typography.titleMedium)
-        GameEngine.ranking(game).forEach { RankingRow(it, isPlayer = it.captain == game.player) }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = onRejouer, modifier = Modifier.weight(1f)) { Text("Rejouer") }
-            OutlinedButton(onClick = onMenu, modifier = Modifier.weight(1f)) { Text("Menu") }
-        }
+    PageScaffold(
+        backdrop = Backdrop.NUIT,
+        modifier = modifier,
+        bottomBar = {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PirateButton("Menu", onClick = onMenu, style = PirateButtonStyle.CONTOUR, modifier = Modifier.weight(1f))
+                PirateButton("Rejouer", onClick = onRejouer, modifier = Modifier.weight(1f))
+            }
+        },
+    ) {
+        Spacer(Modifier.height(32.dp))
+        Text(
+            if (won) "Victoire !" else "Défaite",
+            color = if (won) Gold else Cream,
+            style = MaterialTheme.typography.displayMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            endReason(game),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text("Classement", style = MaterialTheme.typography.titleLarge)
+        GameEngine.ranking(game).forEach { RankingRow(it, isPlayer = it.captain == game.player, isWinner = it.captain == winner) }
     }
 }
 
@@ -60,25 +89,36 @@ private fun endReason(game: GameState): String {
     }
 }
 
-/** Une ligne du classement. Le joueur est mis en avant, les ex aequo gardent le même rang. */
+/** Une ligne du classement. Le joueur est sur parchemin, les ex aequo gardent le même rang. */
 @Composable
-private fun RankingRow(ranked: RankedCaptain, isPlayer: Boolean) {
+private fun RankingRow(ranked: RankedCaptain, isPlayer: Boolean, isWinner: Boolean) {
     val c = ranked.captain
-    val status = if (c.isSunk) "coulé" else "${c.gold} or · coque ${c.hull}/${GameRules.MAX_HULL}"
-    val name = if (isPlayer) "${c.name} (toi)" else c.name
-    Card(
-        colors = if (isPlayer) CardDefaults.cardColors(containerColor = Gold) else CardDefaults.cardColors(),
-        modifier = Modifier.fillMaxWidth(),
+    val status = if (c.isSunk) "Coulé" else "${c.gold} or · coque ${c.hull}/${GameRules.MAX_HULL}"
+    PirateCard(
+        modifier = Modifier.alpha(if (c.isSunk) 0.55f else 1f),
+        color = if (isPlayer) Parchment else Color.White.copy(alpha = 0.08f),
+        contentColor = if (isPlayer) MaterialTheme.colorScheme.onSurface else Cream,
+        selected = isWinner,
     ) {
-        Text(
-            text = "${ranked.rank}. $name — $status",
-            fontWeight = if (isPlayer) FontWeight.Bold else FontWeight.Normal,
-            modifier = Modifier.padding(12.dp),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("${ranked.rank}", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.width(32.dp))
+            CaptainAvatar(c)
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp),
+            ) {
+                Text(
+                    (if (isWinner) "♛ " else "") + c.name + if (isPlayer) " (toi)" else "",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(status, style = MaterialTheme.typography.bodySmall, color = if (isPlayer) InkSoft else Cream.copy(alpha = 0.7f))
+            }
+        }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(widthDp = 380, heightDp = 800)
 @Composable
 private fun FinPagePreview() {
     val game = GameState.newGame("Capitaine Amina", Ship.MAREE_BLEUE).let { g ->

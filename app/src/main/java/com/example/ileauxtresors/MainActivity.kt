@@ -2,13 +2,10 @@ package com.example.ileauxtresors
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ileauxtresors.navigation.Page
 import com.example.ileauxtresors.ui.GameViewModel
@@ -17,6 +14,7 @@ import com.example.ileauxtresors.ui.pages.AttaquePopup
 import com.example.ileauxtresors.ui.pages.CapitainePage
 import com.example.ileauxtresors.ui.pages.FinPage
 import com.example.ileauxtresors.ui.pages.PlateauPage
+import com.example.ileauxtresors.ui.pages.QuitterPopup
 import com.example.ileauxtresors.ui.pages.ReglesPage
 import com.example.ileauxtresors.ui.pages.TavernePage
 import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
@@ -28,9 +26,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             IleAuxTresorsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    PageHost(modifier = Modifier.padding(innerPadding))
-                }
+                PageHost()
             }
         }
     }
@@ -38,23 +34,26 @@ class MainActivity : ComponentActivity() {
 
 /** Associe chaque Page à son écran (l'équivalent de goToPage dans la maquette). */
 @Composable
-private fun PageHost(modifier: Modifier = Modifier, vm: GameViewModel = viewModel()) {
+private fun PageHost(vm: GameViewModel = viewModel()) {
     val game = vm.game
+    // Sur l'accueil, le retour ferme l'appli comme d'habitude.
+    BackHandler(enabled = vm.page != Page.ACCUEIL, onBack = vm::onBack)
+
     when (vm.page) {
         Page.ACCUEIL -> AccueilPage(
             onJouer = { vm.goToPage(Page.CAPITAINE) },
-            onRegles = { vm.goToPage(Page.REGLES) },
-            modifier = modifier,
+            onRegles = vm::openRules,
         )
-        Page.REGLES -> ReglesPage(onRetour = { vm.goToPage(Page.ACCUEIL) }, modifier = modifier)
-        Page.CAPITAINE -> CapitainePage(onJouer = vm::startGame, modifier = modifier)
+        Page.REGLES -> ReglesPage(onRetour = vm::closeRules)
+        Page.CAPITAINE -> CapitainePage(onJouer = vm::startGame, onRetour = { vm.goToPage(Page.ACCUEIL) })
         Page.PLATEAU, Page.ATTAQUE -> if (game != null) {
             PlateauPage(
                 game = game,
                 onLancer = vm::rollDice,
                 onToggleKeep = vm::toggleKeep,
                 onValider = vm::validateDice,
-                modifier = modifier,
+                onRegles = vm::openRules,
+                onQuitter = vm::askQuit,
                 botLog = vm.botLog,
             )
             val hit = game.islandHit
@@ -73,9 +72,10 @@ private fun PageHost(modifier: Modifier = Modifier, vm: GameViewModel = viewMode
                 onAcheter = vm::buyCard,
                 onBalayer = vm::sweepTavern,
                 onFinDuTour = vm::endTurn,
-                modifier = modifier,
             )
         }
-        Page.FIN -> if (game != null) FinPage(game, onRejouer = vm::replay, onMenu = vm::backToMenu, modifier = modifier)
+        Page.FIN -> if (game != null) FinPage(game, onRejouer = vm::replay, onMenu = vm::backToMenu)
     }
+
+    if (vm.confirmQuit) QuitterPopup(onRester = vm::cancelQuit, onQuitter = vm::backToMenu)
 }
