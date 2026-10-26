@@ -8,7 +8,6 @@ data class Captain(
     val gold: Int = 0,
     val hull: Int = GameRules.MAX_HULL,
     val gourds: Int = 0,
-    val cards: List<ButinCard> = emptyList(),
 ) {
     val isSunk: Boolean get() = hull <= 0
 
