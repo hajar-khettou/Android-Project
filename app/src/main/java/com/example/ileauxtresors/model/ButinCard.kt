@@ -20,10 +20,7 @@ data class ButinCard(
     val effect: ButinEffect,
 )
 
-/**
- * Le paquet de départ.
- * TODO(groupe) : proposition à valider ; ajouter des cartes « à garder » (effet permanent).
- */
+/** Le paquet de départ. Toutes les cartes agissent tout de suite : pas de carte « à garder ». */
 object ButinDeck {
     private val kinds = listOf(
         ButinCard("Bourse de doublons", 3, "+1 or", ButinEffect.GainGold(1)),

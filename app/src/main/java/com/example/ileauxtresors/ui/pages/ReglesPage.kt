@@ -3,8 +3,8 @@ package com.example.ileauxtresors.ui.pages
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,19 +13,38 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.ileauxtresors.model.DieFace
 import com.example.ileauxtresors.model.GameRules
-import com.example.ileauxtresors.navigation.PageGroup
+import com.example.ileauxtresors.ui.components.Backdrop
 import com.example.ileauxtresors.ui.components.DieFaceIcon
+import com.example.ileauxtresors.ui.components.PageHeader
 import com.example.ileauxtresors.ui.components.PageScaffold
+import com.example.ileauxtresors.ui.components.PirateButton
+import com.example.ileauxtresors.ui.components.PirateButtonStyle
+import com.example.ileauxtresors.ui.components.PirateCard
+import com.example.ileauxtresors.ui.components.RoundIconButton
 import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
-import com.example.ileauxtresors.ui.theme.MenuBlue
+import com.example.ileauxtresors.ui.theme.InkSoft
+import com.example.ileauxtresors.ui.theme.Sand
+import com.example.ileauxtresors.ui.theme.WoodLight
 
-/** Page.REGLES : Retour → ACCUEIL. */
+/** Page.REGLES : Retour → ACCUEIL, ou la partie si on vient du menu ☰. */
 @Composable
 fun ReglesPage(
     onRetour: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    PageScaffold(title = "Règles", group = PageGroup.MENU, modifier = modifier) {
+    PageScaffold(
+        backdrop = Backdrop.PARCHEMIN,
+        modifier = modifier,
+        header = {
+            PageHeader(
+                title = "Règles du jeu",
+                start = { RoundIconButton("←", "Retour", onClick = onRetour, background = Sand) },
+            )
+        },
+        bottomBar = {
+            PirateButton("Retour", onClick = onRetour, style = PirateButtonStyle.CONTOUR, modifier = Modifier.fillMaxWidth())
+        },
+    ) {
         Section("Le jeu")
         Rule(
             "But",
@@ -96,25 +115,26 @@ fun ReglesPage(
             "Balayer",
             "Pour ${GameRules.SWEEP_COST} gourdes, remplace les ${GameRules.TAVERN_VISIBLE_CARDS} cartes visibles.",
         )
-        OutlinedButton(onClick = onRetour, modifier = Modifier.fillMaxWidth()) { Text("Retour") }
     }
 }
 
 @Composable
 private fun Section(title: String) {
-    Text(title, style = MaterialTheme.typography.titleLarge, color = MenuBlue)
+    Text(title, style = MaterialTheme.typography.headlineMedium, color = WoodLight, modifier = Modifier.padding(top = 8.dp))
 }
 
 @Composable
 private fun Rule(title: String, text: String, faces: List<DieFace> = emptyList()) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        faces.forEach { DieFaceIcon(it, size = 28.dp) }
-        Text(title, style = MaterialTheme.typography.titleMedium)
+    PirateCard {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            faces.forEach { DieFaceIcon(it, size = 28.dp) }
+            Text(title, style = MaterialTheme.typography.titleMedium)
+        }
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = InkSoft)
     }
-    Text(text, style = MaterialTheme.typography.bodyMedium)
 }
 
-@Preview(showBackground = true)
+@Preview(widthDp = 380, heightDp = 800)
 @Composable
 private fun ReglesPagePreview() {
     IleAuxTresorsTheme { ReglesPage(onRetour = {}) }

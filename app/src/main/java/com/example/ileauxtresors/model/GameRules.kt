@@ -15,6 +15,6 @@ object GameRules {
     /** Prix en gourdes pour remplacer les 3 cartes visibles. */
     const val SWEEP_COST = 2
 
-    // TODO(groupe) : valeur à confirmer (10 dans King of Tokyo).
+    /** Points de coque au départ, et maximum (comme les 10 PV de King of Tokyo). */
     const val MAX_HULL = 10
 }

@@ -97,4 +97,17 @@ class BotPlayerTest {
             assertEquals(1, after.islandHolder)
         }
     }
+
+    @Test
+    fun playTurnSteps_showsEachRollThenTheResult() {
+        repeat(20) { seed ->
+            val start = GameEngine.startTurn(botTurn)
+            val steps = BotPlayer.playTurnSteps(start, Random(seed))
+            assertEquals(BotPlayer.playTurn(start, Random(seed)), steps.last())
+            // 1er lancer, puis (dés gardés, relance) autant de fois que nécessaire, puis dés appliqués et achats.
+            val rolls = GameRules.ROLLS_PER_TURN - steps.last().rollsLeft
+            assertEquals(1 + 2 * (rolls - 1) + 2, steps.size)
+            assertEquals(GameRules.ROLLS_PER_TURN - 1, steps.first().rollsLeft)
+        }
+    }
 }

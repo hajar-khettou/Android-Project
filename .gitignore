@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Graphe de connaissance généré par graphify
+graphify-out/

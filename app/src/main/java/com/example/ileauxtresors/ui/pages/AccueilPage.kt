@@ -1,16 +1,28 @@
 package com.example.ileauxtresors.ui.pages
 
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.ileauxtresors.navigation.PageGroup
+import androidx.compose.ui.unit.dp
+import com.example.ileauxtresors.ui.components.Backdrop
+import com.example.ileauxtresors.ui.components.IslandScene
+import com.example.ileauxtresors.ui.components.NightSky
 import com.example.ileauxtresors.ui.components.PageScaffold
+import com.example.ileauxtresors.ui.components.Pill
+import com.example.ileauxtresors.ui.components.PirateButton
+import com.example.ileauxtresors.ui.components.PirateButtonStyle
+import com.example.ileauxtresors.ui.theme.Gold
 import com.example.ileauxtresors.ui.theme.IleAuxTresorsTheme
+import com.example.ileauxtresors.ui.theme.WoodDark
 
 /** Page.ACCUEIL : Jouer → CAPITAINE · Règles → REGLES. */
 @Composable
@@ -19,16 +31,47 @@ fun AccueilPage(
     onRegles: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    PageScaffold(title = "Île aux Trésors", group = PageGroup.MENU, modifier = modifier) {
-        Text("King of Tokyo · édition pirate", style = MaterialTheme.typography.labelLarge)
-        Text("4 capitaines. 1 île. 20 pièces d'or.", style = MaterialTheme.typography.headlineSmall)
-        // TODO : illustration (île, coffre, navire) de la maquette.
-        Button(onClick = onJouer, modifier = Modifier.fillMaxWidth()) { Text("Nouvelle partie") }
-        OutlinedButton(onClick = onRegles, modifier = Modifier.fillMaxWidth()) { Text("Règles") }
+    PageScaffold(
+        backdrop = Backdrop.NUIT,
+        modifier = modifier,
+        scenery = { NightSky() },
+        bottomBar = {
+            PirateButton("⛵ Nouvelle partie", onClick = onJouer, modifier = Modifier.fillMaxWidth())
+            PirateButton(
+                "Règles",
+                onClick = onRegles,
+                style = PirateButtonStyle.CONTOUR,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+    ) {
+        Spacer(Modifier.height(48.dp))
+        Pill(
+            "⚓ King of Tokyo · édition pirate",
+            color = Gold,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Text(
+            text = "Île aux\nTrésors",
+            color = Gold,
+            style = MaterialTheme.typography.displayLarge.copy(
+                shadow = Shadow(WoodDark, offset = Offset(0f, 10f), blurRadius = 4f),
+            ),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            "4 capitaines. 1 île. 20 pièces d'or.",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(24.dp))
+        IslandScene()
     }
 }
 
-@Preview(showBackground = true)
+@Preview(widthDp = 380, heightDp = 800)
 @Composable
 private fun AccueilPagePreview() {
     IleAuxTresorsTheme { AccueilPage(onJouer = {}, onRegles = {}) }
